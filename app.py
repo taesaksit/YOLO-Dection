@@ -1,12 +1,18 @@
 import cv2
 from ultralytics import YOLO
-from gtts import gTTS
-import os
-import time
+import pyttsx3
 import threading
 
+# Initialize TTS engine
+engine = pyttsx3.init()
+
+# Function for speaking
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
 # Start webcam
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(3, 640)
 cap.set(4, 480)
 
@@ -26,15 +32,6 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
               "teddy bear", "hair drier", "toothbrush"
               ]
 
-previous_cls = None
-sound_played_time = 0
-sound_interval = 3  # seconds
-
-def play_sound(text, lang='th'):
-    tts = gTTS(text, lang=lang)
-    tts.save('output.mp3')
-    os.system('afplay output.mp3')
-
 while True:
     success, img = cap.read()
     results = model(img, stream=True)
@@ -53,16 +50,11 @@ while True:
 
             # Class name
             cls = int(box.cls[0])
-            print("Class name -->", classNames[cls])
+            class_name = classNames[cls]
+            print("Class name -->", class_name)
 
-            # Check if enough time has passed since the last sound
-            current_time = time.time()
-            if current_time - sound_played_time > sound_interval:
-                # Create a thread to play the sound
-                threading.Thread(target=play_sound, args=(classNames[cls],)).start()
-
-                # Update the previous class and time
-                sound_played_time = current_time
+            # Speak the detected object
+            threading.Thread(target=speak, args=(class_name,)).start()
 
             # Object details
             org = [x1, y1]
@@ -71,7 +63,7 @@ while True:
             color = (255, 0, 0)
             thickness = 2
 
-            cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
+            cv2.putText(img, class_name, org, font, fontScale, color, thickness)
 
     cv2.imshow('Webcam', img)
     if cv2.waitKey(1) == ord('q'):
